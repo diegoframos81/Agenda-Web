@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agenda Semanal</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>IASSEPE</header>
+  <div class="container">
+    <h1>Agenda de Reserva</h1>
+
+    <div class="navegacao">
+      <button onclick="mudarSemana(-1)">⬅ Semana Anterior</button>
+      <span id="semanaAtualLabel">Semana Atual</span>
+      <button onclick="mudarSemana(1)">Próxima Semana ➡</button>
+    </div>
+
+    <div class="semana" id="diasSemana"></div>
+    <div class="titulo-dia" id="tituloDia"></div>
+    <div class="horarios" id="horarios"></div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h3>Reservar horário: <span id="horarioSelecionado"></span></h3>
+      <input type="text" id="nome" placeholder="Seu nome" required />
+      <input type="text" id="setor" placeholder="Setor" required />
+      <button onclick="confirmarReserva()">Confirmar</button>
+    </div>
+  </div>
+
+  <div class="modal" id="cancelarModal">
+    <div class="modal-content">
+      <h3>Cancelar reserva de <span id="horaCancelar"></span></h3>
+      <input type="text" id="nomeCancelar" placeholder="Digite seu nome para confirmar" />
+      <button onclick="confirmarCancelamento()">Confirmar Cancelamento</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
