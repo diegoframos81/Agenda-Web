@@ -8,20 +8,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header>IASSEPE</header>
+  <header>SAS-IASSEPE</header>
   <div class="container">
-    <h1>Agenda de Reserva</h1>
-    <h1> Sala de reunião Financeiro</h1>
-
-    <div class="navegacao">
-      <button onclick="mudarSemana(-1)">⬅ Semana Anterior</button>
-      <span id="semanaAtualLabel">Semana Atual</span>
-      <button onclick="mudarSemana(1)">Próxima Semana ➡</button>
+    <div class="topbar">
+      <div class="left">
+        <button id="btnHoje">Hoje</button>
+        <button id="btnPrev">◀</button>
+        <button id="btnNext">▶</button>
+        <span id="rangeLabel"></span>
+      </div>
+      <div class="right">
+        <button id="btnCustom">+</button>
+        <select id="viewSelect">
+          <option value="timeGridWeek">Semanal</option>
+          <option value="dayGridMonth">Mensal</option>
+        </select>
+        <button id="btnNovaSala" style="display:none">Nova sala</button>
+      </div>
     </div>
-
-    <div class="semana" id="diasSemana"></div>
-    <div class="titulo-dia" id="tituloDia"></div>
-    <div class="horarios" id="horarios"></div>
+    <div id="calendar"></div>
   </div>
 
   <div class="modal" id="modal">
@@ -29,6 +34,7 @@
       <h3>Reservar horário: <span id="horarioSelecionado"></span></h3>
       <input type="text" id="nome" placeholder="Seu nome" required />
       <input type="text" id="setor" placeholder="Setor" required />
+      <input type="text" id="motivo" placeholder="Motivo (opcional)" />
       <button onclick="confirmarReserva()">Confirmar</button>
     </div>
   </div>
@@ -36,13 +42,29 @@
   <div class="modal" id="cancelarModal">
     <div class="modal-content">
       <h3>Cancelar reserva de <span id="horaCancelar"></span></h3>
-      <input type="text" id="nomeCancelar" placeholder="Digite seu nome para confirmar" />
+      <input type="text" id="codigoCancelar" placeholder="Código de cancelamento" />
       <button onclick="confirmarCancelamento()">Confirmar Cancelamento</button>
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <div class="modal" id="customModal">
+    <div class="modal-content">
+      <h3>Nova reserva personalizada</h3>
+      <label>Data</label>
+      <select id="customDate"></select>
+      <label>Entrada</label>
+      <select id="customStart"></select>
+      <label>Saída</label>
+      <select id="customEnd"></select>
+      <input type="text" id="customNome" placeholder="Seu nome" required />
+      <input type="text" id="customSetor" placeholder="Setor" required />
+      <input type="text" id="customMotivo" placeholder="Motivo (opcional)" />
+      <button id="btnConfirmCustom">Confirmar</button>
+    </div>
+  </div>
+
+
   <script src="script.js"></script>
+  <script src="https://unpkg.com/fullcalendar@6.1.15/index.global.min.js"></script>
 </body>
 </html>

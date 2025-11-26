@@ -21,12 +21,31 @@ body {
 }
 
 header {
-  background: var(--primary);
-  color: white;
+  background: #0b3fa8;
+  color: #fff;
   padding: 1rem;
+  padding-bottom: calc(1rem + 12px);
   text-align: center;
   font-size: 1.5rem;
   font-weight: bold;
+  position: relative;
+}
+
+header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 12px;
+  background: linear-gradient(to bottom,
+    #d50000 0%,
+    #d50000 33.33%,
+    #ffd700 33.33%,
+    #ffd700 66.66%,
+    #009b3a 66.66%,
+    #009b3a 100%
+  );
 }
 
 .container {
@@ -126,6 +145,10 @@ h1 {
   color: var(--muted);
 }
 
+.card.active {
+  outline: 2px solid var(--primary);
+}
+
 .card button {
   margin-top: 0.5rem;
   padding: 0.5rem;
@@ -162,15 +185,17 @@ h1 {
 .modal-content {
   background: white;
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: 16px;
   width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  max-width: 520px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
 .modal-content h3 {
   margin-bottom: 1rem;
   color: var(--primary-dark);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .modal-content input {
@@ -195,4 +220,166 @@ h1 {
 
 .modal-content button:hover {
   background: var(--primary-dark);
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.topbar .left button,
+.topbar .right select,
+.topbar .right button {
+  padding: 0.5rem 0.8rem;
+  margin-right: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+}
+
+#btnCustom {
+  font-weight: 700;
+}
+
+/* Oculta os controles duplicados da topbar, mantendo apenas o rangeLabel e Nova sala */
+
+#rangeLabel {
+  font-weight: 700;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-transform: capitalize;
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+#calendar {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  padding: 0.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  background: #333;
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  z-index: 2000;
+}
+
+/* Aumenta a área "Dia todo" na timeGrid */
+.fc-timegrid-axis-cushion {
+  padding: 10px 0;
+}
+.fc-timegrid-axis-frame {
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fc-daygrid-day-events {
+  min-height: 84px;
+}
+
+.fc-col-header-cell-cushion {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 0;
+  width: 100%;
+  white-space: normal !important;
+}
+.fc-col-header-cell-cushion .fc-dayname,
+.fc-col-header-cell-cushion .fc-daydate {
+  display: block;
+}
+
+/* Mantém "Dia todo" em uma linha */
+.fc-timegrid-axis-cushion {
+  white-space: nowrap;
+  display: inline-block;
+  overflow: visible;
+  padding: 0 8px;
+  max-width: 100%;
+  text-align: center;
+  margin: 0 auto;
+}
+
+/* Largura fixa da coluna do eixo (inclui header e corpo) */
+#calendar .fc-timegrid-axis,
+.fc-timegrid-axis {
+  min-width: 200px !important;
+  width: 200px !important;
+}
+.fc-timegrid-slot-label {
+  min-width: 200px !important;
+  width: 200px !important;
+}
+#calendar .fc-timegrid-slot-label .fc-timegrid-slot-label-frame {
+  width: max-content;
+  margin: 0 auto;
+}
+#calendar .fc-timegrid-slot-label .fc-timegrid-slot-label-cushion {
+  white-space: nowrap;
+}
+#calendar .fc-col-header col:first-child,
+#calendar .fc-scrollgrid-sync-table col:first-child,
+#calendar .fc-timegrid-slots col:first-child,
+#calendar .fc-timegrid-cols col:first-child {
+  width: 200px !important;
+}
+.fc-col-header-cell { text-align: center; }
+.fc-col-header-cell .fc-scrollgrid-sync-inner { display: flex; justify-content: center; }
+.fc-dayname {
+  font-weight: 600;
+}
+.fc-daydate {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.modal-content label {
+  display: inline-block;
+  width: 48%;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0.5rem 0;
+}
+
+.modal-content select {
+  display: inline-block;
+  width: 48%;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.modal-content input, .modal-content select {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04) inset;
+}
+
+.modal-content button {
+  font-size: 1rem;
 }

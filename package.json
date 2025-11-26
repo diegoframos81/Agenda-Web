@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "serve": "^14.2.5"
+  },
+  "scripts": {
+    "web:dev": "serve -l 5500 .",
+    "api:dev": "npm --prefix server run dev"
+  }
+}

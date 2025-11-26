@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Agenda</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Administração de Salas</h1>
+    <section>
+      <h2>Login</h2>
+      <input type="email" id="adminEmail" placeholder="Email" />
+      <input type="password" id="adminPassword" placeholder="Senha" />
+      <button onclick="adminLogin()">Entrar</button>
+    </section>
+    <section>
+      <h2>Criar Sala</h2>
+      <input type="text" id="roomName" placeholder="Nome da sala" />
+      <input type="number" id="roomCapacity" placeholder="Capacidade (opcional)" />
+      <button onclick="createRoom()">Criar</button>
+    </section>
+    <section>
+      <h2>Salas</h2>
+      <ul id="roomsList"></ul>
+    </section>
+  </div>
+  <script src="admin.js"></script>
+  </body>
+  </html>
