@@ -14,6 +14,6 @@ const reservationSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-reservationSchema.index({ roomId: 1, date: 1, hour: 1 }, { unique: true })
+reservationSchema.index({ roomId: 1, date: 1, hour: 1 }, { unique: true, partialFilterExpression: { status: 'active' } })
 
 export const Reservation = mongoose.model('Reservation', reservationSchema)

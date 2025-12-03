@@ -2,69 +2,101 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Agenda Semanal</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes, maximum-scale=5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Agenda" />
+  <meta name="theme-color" content="#0b3fa8" />
+  <meta name="description" content="Sistema de agendamento de salas SAS-IASSEPE" />
+  <title>Agendamento IASSEPE</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/calendar-custom.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
-<body>
-  <header>SAS-IASSEPE</header>
-  <div class="container">
-    <div class="topbar">
-      <div class="left">
-        <button id="btnHoje">Hoje</button>
-        <button id="btnPrev">◀</button>
-        <button id="btnNext">▶</button>
-        <span id="rangeLabel"></span>
+  <body>
+    <header>
+      <a href="/">SAS-IASSEPE</a>
+    </header>
+    <div class="container">
+      <div id="roomsGrid" class="rooms-grid" style="display:none"></div>
+      <div class="topbar">
+        <div class="left">
+          <button id="btnPrev" aria-label="Semana anterior">◀</button>
+          <button id="btnHoje" aria-label="Ir para hoje">Hoje</button>
+          <button id="btnNext" aria-label="Próxima semana">▶</button>
+        </div>
+        <div class="right">
+          <select id="daySelect" class="mobile-only" aria-label="Selecionar dia"></select>
+          <select id="viewSelect" aria-label="Selecionar visualização do calendário">
+            <option value="week">Semanal</option>
+            <option value="month">Mensal</option>
+          </select>
+          <button id="btnAllDay" aria-label="Reservar dia inteiro">Dia todo</button>
+          <button id="btnCustom" aria-label="Nova reserva personalizada">+</button>
+        </div>
+        <div class="center"><span id="rangeLabel"></span></div>
       </div>
-      <div class="right">
-        <button id="btnCustom">+</button>
-        <select id="viewSelect">
-          <option value="timeGridWeek">Semanal</option>
-          <option value="dayGridMonth">Mensal</option>
-        </select>
-        <button id="btnNovaSala" style="display:none">Nova sala</button>
-      </div>
+      <div id="calendar" role="main" aria-label="Calendário de agendamentos"></div>
     </div>
-    <div id="calendar"></div>
-  </div>
 
   <div class="modal" id="modal">
     <div class="modal-content">
       <h3>Reservar horário: <span id="horarioSelecionado"></span></h3>
-      <input type="text" id="nome" placeholder="Seu nome" required />
-      <input type="text" id="setor" placeholder="Setor" required />
-      <input type="text" id="motivo" placeholder="Motivo (opcional)" />
-      <button onclick="confirmarReserva()">Confirmar</button>
+      <form id="formReserva" onsubmit="event.preventDefault(); confirmarReserva();">
+        <input type="text" id="nome" placeholder="Seu nome" required />
+        <input type="text" id="setor" placeholder="Setor" required />
+        <input type="text" id="motivo" placeholder="Motivo (opcional)" />
+        <button type="submit">Confirmar</button>
+      </form>
     </div>
   </div>
 
   <div class="modal" id="cancelarModal">
     <div class="modal-content">
       <h3>Cancelar reserva de <span id="horaCancelar"></span></h3>
-      <input type="text" id="codigoCancelar" placeholder="Código de cancelamento" />
-      <button onclick="confirmarCancelamento()">Confirmar Cancelamento</button>
+      <div id="cancelStep1">
+        <input type="text" id="nomeCancelar" placeholder="Digite parte do nome para filtrar" />
+        <div id="cancelList" class="cancel-list" aria-label="Reservas do dia para seleção"></div>
+        <small>Selecione uma ou mais reservas desse dia. Após selecionar a primeira, somente reservas com o mesmo nome poderão ser marcadas.</small>
+        <form onsubmit="event.preventDefault(); avancarCancelamento();">
+          <button type="submit" id="btnCancelNext">Avançar</button>
+        </form>
+      </div>
+      <div id="cancelStep2" style="display:none">
+        <p id="cancelResumo"></p>
+        <form id="formCancelConfirm" onsubmit="event.preventDefault(); confirmarCancelamento();">
+          <input type="text" id="confirmPhrase" placeholder="Digite exatamente: Confirmo o cancelamento" />
+          <div class="actions">
+            <button type="button" onclick="voltarCancelamento()">Voltar</button>
+            <button type="submit">Confirmar Cancelamento</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
   <div class="modal" id="customModal">
     <div class="modal-content">
       <h3>Nova reserva personalizada</h3>
-      <label>Data</label>
-      <select id="customDate"></select>
-      <label>Entrada</label>
-      <select id="customStart"></select>
-      <label>Saída</label>
-      <select id="customEnd"></select>
-      <input type="text" id="customNome" placeholder="Seu nome" required />
-      <input type="text" id="customSetor" placeholder="Setor" required />
-      <input type="text" id="customMotivo" placeholder="Motivo (opcional)" />
-      <button id="btnConfirmCustom">Confirmar</button>
+      <form id="formCustomReserva" onsubmit="event.preventDefault(); document.getElementById('btnConfirmCustom').click();">
+        <label>Data</label>
+        <select id="customDate"></select>
+        <label>Entrada</label>
+        <select id="customStart"></select>
+        <label>Saída</label>
+        <select id="customEnd"></select>
+        <input type="text" id="customNome" placeholder="Seu nome" required />
+        <input type="text" id="customSetor" placeholder="Setor" required />
+        <input type="text" id="customMotivo" placeholder="Motivo (opcional)" />
+        <button type="submit" id="btnConfirmCustom">Confirmar</button>
+      </form>
     </div>
   </div>
 
 
-  <script src="script.js"></script>
-  <script src="https://unpkg.com/fullcalendar@6.1.15/index.global.min.js"></script>
-</body>
-</html>
+  <script src="/calendar-custom.js"></script>
+  <script src="/responsive.js"></script>
+  <script src="/responsive-test.js"></script>
+  <script src="/script.js"></script>
+  </body>
+  </html>

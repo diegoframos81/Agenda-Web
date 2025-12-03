@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin/login", "destination": "/admin.html" },
+    { "source": "/:id/agendamento", "destination": "/index.html" }
+  ]
+}

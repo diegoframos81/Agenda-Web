@@ -1,13 +1,21 @@
 const API_BASE = 'http://localhost:4000/api';
 let calendar;
+let refetchTimer = null;
+const eventsCache = {};
 
 let dataSelecionada = '';
 let horaParaCancelar = '';
 let roomId = null;
+let roomsCache = [];
 let adminToken = localStorage.getItem('adminToken') || '';
 
 const modal = document.getElementById('modal');
 const cancelarModal = document.getElementById('cancelarModal');
+const nomeCancelarInput = document.getElementById('nomeCancelar');
+const cancelListEl = document.getElementById('cancelList');
+const confirmPhraseEl = document.getElementById('confirmPhrase');
+let cancelBaseName = '';
+let cancelSelectedHours = [];
 const viewSelect = document.getElementById('viewSelect');
 const rangeLabel = document.getElementById('rangeLabel');
 const btnHoje = document.getElementById('btnHoje');
@@ -19,6 +27,7 @@ const customModal = document.getElementById('customModal');
 const customDate = document.getElementById('customDate');
 const customStart = document.getElementById('customStart');
 const customEnd = document.getElementById('customEnd');
+const daySelect = document.getElementById('daySelect');
 
 function getDiasUteisSemana(offset = 0) {
   const dias = [];
@@ -45,7 +54,8 @@ function mudarSemana(direcao) {
 
 function formatarRangeLabel(start) {
   const monthLong = start.toLocaleDateString('pt-BR', { month: 'long' });
-  const label = monthLong.charAt(0).toUpperCase() + monthLong.slice(1);
+  const year = start.getFullYear();
+  const label = monthLong.charAt(0).toUpperCase() + monthLong.slice(1) + ' ' + year;
   rangeLabel.textContent = label;
 }
 
@@ -55,6 +65,28 @@ function showToast(msg) {
   div.textContent = msg;
   document.body.appendChild(div);
   setTimeout(() => div.remove(), 2500);
+}
+
+function showLoading() {
+  let el = document.getElementById('loadingOverlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loadingOverlay';
+    el.className = 'loading-overlay';
+    el.innerHTML = '<div class="loading-spinner"></div><span>Carregando...</span>';
+    document.body.appendChild(el);
+  }
+  el.style.display = 'flex';
+}
+
+function hideLoading() {
+  const el = document.getElementById('loadingOverlay');
+  if (el) el.style.display = 'none';
+}
+
+function debouncedRefetch(ms = 200) {
+  if (refetchTimer) clearTimeout(refetchTimer);
+  refetchTimer = setTimeout(() => { if (calendar) calendar.refetchEvents(); }, ms);
 }
 
 function horasDia() {
@@ -88,13 +120,60 @@ function gerarHorasIntervalo(startStr, endStr) {
   return out;
 }
 
-async function carregarSalas() {
-  const res = await fetch(`${API_BASE}/rooms`);
-  const rooms = await res.json();
-  roomId = rooms[0]?._id || null;
+async function getRooms() {
+  try {
+    const health = await fetch(`${API_BASE}/health`).then(r => r.ok);
+    if (!health) throw new Error('API fora do ar');
+    const res = await fetch(`${API_BASE}/rooms`);
+    if (!res.ok) throw new Error(`Falha ao carregar salas (${res.status})`);
+    const rooms = await res.json();
+    roomsCache = rooms;
+    return rooms;
+  } catch (e) {
+    showToast('Não foi possível carregar as salas. Verifique a API.');
+    console.error(e);
+    roomsCache = [];
+    return [];
+  }
+}
+
+function toSlug(str) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function findRoomIdBySlug(slug) {
+  const r = roomsCache.find(r => toSlug(r.name) === slug);
+  return r?._id || null;
+}
+
+function renderRooms(rooms) {
+  const grid = document.getElementById('roomsGrid');
+  grid.style.display = '';
+  const html = rooms.map(r => {
+    const cap = r.capacity ? `Capacidade: ${r.capacity}` : '';
+    const cls = r.available ? 'room-card' : 'room-card disabled';
+    const sector = r.sector ? `Setor: ${r.sector}` : '';
+    const floor = r.floor ? `Andar: ${r.floor}` : '';
+    return `<div class="${cls}" data-id="${r._id}"><h3>${r.name}</h3><div class="room-meta">${[sector, floor, cap].filter(Boolean).map(t=>`<span>${t}</span>`).join('')}</div></div>`;
+  }).join('');
+  grid.innerHTML = html;
+  document.querySelectorAll('.room-card').forEach(el => {
+    el.onclick = () => {
+      if (el.classList.contains('disabled')) return;
+      const r = rooms.find(x => x._id === el.dataset.id);
+      const slug = r ? toSlug(r.name || '') : el.dataset.id;
+      location.assign(`/${slug}/agendamento`);
+    };
+  });
 }
 
 function atualizarUIAdmin() {
+  if (!btnNovaSala) return;
   if (adminToken) {
     btnNovaSala.style.display = '';
   } else {
@@ -117,7 +196,8 @@ async function criarSala() {
     showToast(`Erro: ${err.error || res.status}`);
     return;
   }
-  await carregarSalas();
+  await getRooms();
+  if (location.pathname === '/') renderRooms(roomsCache);
   showToast('Sala criada');
 }
 
@@ -131,6 +211,7 @@ function mapReservationToEvent(r) {
     title: `${r.sector} - ${r.name}`,
     start,
     end,
+    extendedProps: { name: r.name, sector: r.sector, motive: r.motive || '' },
   };
 }
 
@@ -138,43 +219,46 @@ async function createReservationAt(dateStr, hourStr) {
   const nome = document.getElementById('nome').value.trim();
   const setor = document.getElementById('setor').value.trim();
   const motivo = document.getElementById('motivo').value.trim();
-  if (!nome || !setor || !roomId) return;
+  if (!nome || !setor || !roomId) return false;
   const payload = { roomId, date: dateStr, hours: [hourStr], name: nome, sector: setor, motive: motivo || undefined };
   const res = await fetch(`${API_BASE}/reservations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     showToast(`Erro: ${err.error || res.status}`);
-    return;
+    return false;
   }
-  const created = await res.json();
-  const codes = created.map(r => `${r.hour}: ${r.cancelCode}`).join('\n');
+  await res.json();
   showToast('Reserva criada');
-  alert(`Código(s) de cancelamento:\n${codes}`);
   calendar.refetchEvents();
+  for (const k in eventsCache) delete eventsCache[k];
+  return true;
 }
 
 async function createReservationFullDay(dateStr) {
   const nome = document.getElementById('nome').value.trim();
   const setor = document.getElementById('setor').value.trim();
   const motivo = document.getElementById('motivo').value.trim();
-  if (!nome || !setor || !roomId) return;
+  if (!nome || !setor || !roomId) return false;
   const payload = { roomId, date: dateStr, hours: horasDia(), name: nome, sector: setor, motive: motivo || undefined };
   const res = await fetch(`${API_BASE}/reservations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     showToast(`Erro: ${err.error || res.status}`);
-    return;
+    return false;
   }
-  const created = await res.json();
-  const codes = created.map(r => `${r.hour}: ${r.cancelCode}`).join('\n');
+  await res.json();
   showToast('Dia todo reservado');
-  alert(`Códigos de cancelamento:\n${codes}`);
   calendar.refetchEvents();
+  for (const k in eventsCache) delete eventsCache[k];
+  return true;
 }
 
 function abrirModalPara(dateStr, hourStr) {
-  document.getElementById('horarioSelecionado').textContent = `${dateStr} ${hourStr}`;
+  const dataBr = formatarIsoParaBr(dateStr);
+  document.getElementById('horarioSelecionado').textContent = `${dataBr} às ${hourStr}`;
   modal.style.display = 'flex';
+  const content = modal.querySelector('.modal-content');
+  if (content) { content.classList.remove('anim-scale-out','anim-fade-out'); content.classList.add('anim-scale-in'); }
   modal.dataset.date = dateStr;
   modal.dataset.hour = hourStr;
   modal.dataset.mode = 'hour';
@@ -184,160 +268,308 @@ async function confirmarReserva() {
   const dateStr = modal.dataset.date;
   const hourStr = modal.dataset.hour;
   const mode = modal.dataset.mode;
+  let success = false;
+  
   if (mode === 'allday') {
-    await createReservationFullDay(dateStr);
+    success = await createReservationFullDay(dateStr);
   } else {
-    await createReservationAt(dateStr, hourStr);
+    success = await createReservationAt(dateStr, hourStr);
   }
-  modal.style.display = 'none';
-  document.getElementById('nome').value = '';
-  document.getElementById('setor').value = '';
-  document.getElementById('motivo').value = '';
+  
+  if (success) {
+    modal.style.display = 'none';
+    document.getElementById('nome').value = '';
+    document.getElementById('setor').value = '';
+    document.getElementById('motivo').value = '';
+  }
 }
 
 function abrirCancelamento(dateStr, hourStr) {
   cancelarModal.style.display = 'flex';
+  const content = cancelarModal.querySelector('.modal-content');
+  if (content) { content.classList.remove('anim-scale-out','anim-fade-out'); content.classList.add('anim-scale-in'); }
   document.getElementById('horaCancelar').textContent = `${dateStr} ${hourStr}`;
   cancelarModal.dataset.date = dateStr;
   cancelarModal.dataset.hour = hourStr;
+  // preparar etapas e dados
+  const step1 = document.getElementById('cancelStep1');
+  const step2 = document.getElementById('cancelStep2');
+  if (step1 && step2) {
+    step1.style.display = '';
+    step2.style.display = 'none';
+  }
+  if (nomeCancelarInput) nomeCancelarInput.value = '';
+  if (confirmPhraseEl) confirmPhraseEl.value = '';
+  cancelBaseName = '';
+  cancelSelectedHours = [];
+  montarListaCancelamentos(dateStr);
+  bindCancelNameFilter();
+}
+
+function montarListaCancelamentos(dateStr) {
+  if (!cancelListEl) return;
+  const items = (calendar && Array.isArray(calendar.events)) ? calendar.events.filter(e => e.date === dateStr) : [];
+  // Ordenar por hora
+  items.sort((a, b) => a.hour.localeCompare(b.hour));
+  cancelListEl.innerHTML = items.map(ev => {
+    const id = `cancel_${ev.date}_${ev.hour}`.replace(/[^a-zA-Z0-9_]/g,'_');
+    const label = `<span class="hour-blue">${ev.hour}</span> — <span class="name-blue">${ev.name}</span>${ev.sector ? ' <span class="muted">('+ev.sector+')</span>' : ''}${ev.motive ? ' — <span class="muted">'+ev.motive+'</span>' : ''}`;
+    return `<label class="cancel-item"><input type="checkbox" data-hour="${ev.hour}" data-name="${ev.name}" id="${id}"> ${label}</label>`;
+  }).join('') || '<em>Não há reservas ativas para este dia.</em>';
+
+  cancelListEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const name = cb.dataset.name || '';
+      if (cb.checked && !cancelBaseName) {
+        cancelBaseName = name; // fixa o nome base
+        // desabilitar itens com nome diferente
+        bloquearNomesDiferentes();
+      }
+      if (!Array.from(cancelListEl.querySelectorAll('input[type="checkbox"]')).some(x => x.checked)) {
+        // nenhuma seleção: liberar novamente
+        cancelBaseName = '';
+        desbloquearTodos();
+      }
+      atualizarSelecionados();
+    });
+  });
+  atualizarSelecionados();
+}
+
+function bloquearNomesDiferentes() {
+  cancelListEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    const same = (cb.dataset.name || '') === cancelBaseName;
+    cb.disabled = !same && !cb.checked;
+    const label = cb.closest('label');
+    if (label) label.style.opacity = same || cb.checked ? '1' : '0.5';
+  });
+}
+
+function desbloquearTodos() {
+  cancelListEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.disabled = false;
+    const label = cb.closest('label');
+    if (label) label.style.opacity = '1';
+  });
+}
+
+function atualizarSelecionados() {
+  cancelSelectedHours = Array.from(cancelListEl.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.dataset.hour);
+}
+
+function bindCancelNameFilter() {
+  if (!nomeCancelarInput) return;
+  nomeCancelarInput.oninput = () => {
+    const term = nomeCancelarInput.value.trim().toLowerCase();
+    cancelListEl.querySelectorAll('label.cancel-item').forEach(lbl => {
+      const cb = lbl.querySelector('input[type="checkbox"]');
+      const name = (cb?.dataset.name || '').toLowerCase();
+      const show = term.length === 0 || name.includes(term);
+      lbl.style.display = show ? '' : 'none';
+    });
+  };
+}
+
+function avancarCancelamento() {
+  if (cancelSelectedHours.length === 0) { showToast('Selecione ao menos uma reserva'); return; }
+  if (!cancelBaseName) { showToast('Selecione a primeira reserva para fixar o nome'); return; }
+  const dateStr = cancelarModal.dataset.date;
+  const dataBr = formatarIsoParaBr(dateStr);
+  const resumoTxt = `Cancelar ${cancelSelectedHours.length} reserva(s) de \"${cancelBaseName}\" no dia ${dataBr} (${cancelSelectedHours.join(', ')})`;
+  const resumo = document.getElementById('cancelResumo');
+  if (resumo) resumo.textContent = resumoTxt;
+  const step1 = document.getElementById('cancelStep1');
+  const step2 = document.getElementById('cancelStep2');
+  if (step1 && step2) { step1.style.display = 'none'; step2.style.display = ''; }
+}
+
+function voltarCancelamento() {
+  const step1 = document.getElementById('cancelStep1');
+  const step2 = document.getElementById('cancelStep2');
+  if (step1 && step2) { step2.style.display = 'none'; step1.style.display = ''; }
 }
 
 async function confirmarCancelamento() {
-  const codigo = document.getElementById('codigoCancelar').value.trim();
   const dateStr = cancelarModal.dataset.date;
-  const hourStr = cancelarModal.dataset.hour;
-  if (!codigo || !roomId || !dateStr || !hourStr) return;
-  const res = await fetch(`${API_BASE}/reservations/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomId, date: dateStr, hour: hourStr, cancelCode: codigo }) });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    showToast(`Erro: ${err.error || res.status}`);
-    return;
+  if (!roomId || !dateStr) return;
+  if (cancelSelectedHours.length === 0) { showToast('Nenhuma reserva selecionada'); return; }
+  if (!confirmPhraseEl || confirmPhraseEl.value !== 'Confirmo o cancelamento') { showToast('Digite exatamente: Confirmo o cancelamento'); return; }
+
+  const requests = cancelSelectedHours.map(hour => {
+    return fetch(`${API_BASE}/reservations/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomId, date: dateStr, hour, name: cancelBaseName })
+    }).then(async r => {
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.error || `Falha ao cancelar ${hour}`);
+      }
+      return r.json();
+    });
+  });
+
+  try {
+    await Promise.all(requests);
+    showToast(`Cancelado(s): ${cancelSelectedHours.length}`);
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Erro ao cancelar');
   }
   cancelarModal.style.display = 'none';
-  document.getElementById('codigoCancelar').value = '';
+  if (nomeCancelarInput) nomeCancelarInput.value = '';
+  if (confirmPhraseEl) confirmPhraseEl.value = '';
+  cancelBaseName = '';
+  cancelSelectedHours = [];
   calendar.refetchEvents();
+  for (const k in eventsCache) delete eventsCache[k];
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await carregarSalas();
+  const path = location.pathname;
+  const rooms = await getRooms();
   atualizarUIAdmin();
+  const isHome = path === '/';
+  const isCalendarRoute = /^\/[^/]+\/agendamento$/.test(path);
+  if (isHome) {
+    document.querySelector('.topbar').style.display = 'none';
+    document.getElementById('calendar').style.display = 'none';
+    renderRooms(rooms);
+    return;
+  }
+  if (isCalendarRoute) {
+    const seg = decodeURIComponent(path.split('/')[1]);
+    const bySlug = findRoomIdBySlug(seg);
+    if (bySlug) {
+      roomId = bySlug;
+    } else {
+      const exists = rooms.some(r => r._id === seg);
+      roomId = exists ? seg : (rooms[0]?._id || null);
+    }
+  } else {
+    roomId = rooms[0]?._id || null;
+  }
   const now = new Date();
-  const y = now.getFullYear();
-  const yearStart = new Date(y, 0, 1);
-  const yearEnd = new Date(y, 11, 31, 23, 59, 59);
-  calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-    locale: 'pt-br',
-    initialView: 'timeGridWeek',
-    selectable: true,
-    editable: true,
-    eventDurationEditable: false,
-    slotMinTime: '08:00:00',
-    slotMaxTime: '17:00:00',
-    slotDuration: '01:00:00',
-    slotLabelInterval: '01:00:00',
-    slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
-    expandRows: true,
-    contentHeight: 560,
-    validRange: { start: yearStart, end: yearEnd },
-    views: { timeGridWeek: { weekends: false } },
-    dayHeaderContent: (arg) => {
-      const d = arg.date
-      const weekday = d.toLocaleDateString('pt-BR', { weekday: 'long' })
-      const dayName = weekday.charAt(0).toUpperCase() + weekday.slice(1)
-      if (arg.view.type === 'timeGridWeek') {
-        const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        return { html: `<span class="fc-dayname">${dayName}</span><span class="fc-daydate">${dateStr}</span>` }
-      }
-      return { html: `<span class="fc-dayname">${dayName}</span>` }
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayISO = now.toISOString().slice(0, 10);
+  
+  // Inicializar calendário customizado
+  calendar = new CustomCalendar(document.getElementById('calendar'), {
+    onCellClick: (date, hour) => {
+      if (date < todayISO) return;
+      abrirModalPara(date, hour);
     },
-    headerToolbar: false,
-    eventClick: (info) => {
-      const start = info.event.start;
-      const dateStr = start.toISOString().slice(0, 10);
-      const hourStr = start.toTimeString().slice(0,5);
-      abrirCancelamento(dateStr, hourStr);
-    },
-    select: (sel) => {
-      const start = sel.start;
-      const dateStr = start.toISOString().slice(0,10);
-      const hourStr = start.toTimeString().slice(0,5);
-      abrirModalPara(dateStr, hourStr);
-    },
-    dateClick: (info) => {
-      if (calendar.view.type === 'dayGridMonth') {
-        const hourStr = prompt('Hora (08:00–16:00):', '08:00');
-        if (!hourStr) return;
-        abrirModalPara(info.dateStr, hourStr);
+    onEventClick: (eventId) => {
+      const event = calendar.events.find(e => e.id === eventId);
+      if (event) {
+        abrirCancelamento(event.date, event.hour);
       }
     },
-    datesSet: () => {
-      const el = document.querySelector('.fc-timegrid-axis-cushion');
-      if (el) el.textContent = 'Dia todo';
-      document.querySelectorAll('.fc-daygrid-day').forEach(cell => {
-        const date = cell.getAttribute('data-date');
-        cell.onclick = () => {
-          document.getElementById('horarioSelecionado').textContent = `${date} Dia todo`;
-          modal.style.display = 'flex';
-          modal.dataset.date = date;
-          modal.dataset.mode = 'allday';
-        };
-      });
-      ajustarLarguraEixo(200);
-
-      const start = calendar.view.currentStart;
-      const end = calendar.view.currentEnd;
-      const dates = [];
-      const cur = new Date(start);
-      while (cur < end) {
-        if (cur.getDay() >= 1 && cur.getDay() <= 5) {
-          const iso = cur.toISOString().slice(0,10);
-          dates.push(iso);
-        }
-        cur.setDate(cur.getDate() + 1);
+    onMonthCellClick: (date) => {
+      if (window.innerWidth <= 768) {
+        calendar.changeView('week', date);
+      } else {
+        calendar.changeView('week', date);
       }
-      customDate.innerHTML = dates.map(d => `<option value="${d}">${formatarIsoParaBr(d)}</option>`).join('');
-      customStart.innerHTML = horasEntrada().map(h => `<option value="${h}">${h}</option>`).join('');
-      customEnd.innerHTML = horasSaida().map(h => `<option value="${h}">${h}</option>`).join('');
-
-      const isWeek = calendar.view.type === 'timeGridWeek';
-      btnCustom.disabled = !isWeek;
+      updateRangeLabel();
+      fetchAndDisplayEvents();
     },
-    eventDrop: async (info) => {
-      const oldStart = info.oldEvent.start;
-      const oldDate = oldStart.toISOString().slice(0,10);
-      const oldHour = oldStart.toTimeString().slice(0,5);
-      const newStart = info.event.start;
-      const newDate = newStart.toISOString().slice(0,10);
-      const newHour = newStart.toTimeString().slice(0,5);
-      const codigo = prompt('Código de cancelamento para mover:');
-      if (!codigo) { info.revert(); return; }
-      const createRes = await fetch(`${API_BASE}/reservations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomId, date: newDate, hours: [newHour], name: info.event.title.split(' - ')[1], sector: info.event.title.split(' - ')[0] }) });
-      if (!createRes.ok) { showToast('Conflito no novo horário'); info.revert(); return; }
-      const cancelRes = await fetch(`${API_BASE}/reservations/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roomId, date: oldDate, hour: oldHour, cancelCode: codigo }) });
-      if (!cancelRes.ok) { showToast('Código inválido, revertendo'); info.revert(); return; }
-      showToast('Evento movido');
-      calendar.refetchEvents();
-    },
-    events: async (fetchInfo, success, failure) => {
-      try {
-        if (!roomId) return success([]);
-        const url = `${API_BASE}/reservations/range?roomId=${roomId}&start=${fetchInfo.startStr.slice(0,10)}&end=${fetchInfo.endStr.slice(0,10)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        success(data.map(mapReservationToEvent));
-      } catch (e) {
-        failure(e);
-      }
-    },
+    onRefetch: () => {
+      fetchAndDisplayEvents();
+    }
   });
-  calendar.render();
-
-  btnHoje.onclick = () => { calendar.today(); updateRangeLabel(); };
-  btnPrev.onclick = () => { calendar.prev(); updateRangeLabel(); };
-  btnNext.onclick = () => { calendar.next(); updateRangeLabel(); };
-  viewSelect.onchange = () => { calendar.changeView(viewSelect.value); updateRangeLabel(); };
-  btnNovaSala.onclick = () => { criarSala(); };
-  btnCustom.onclick = () => { customModal.style.display = 'flex'; };
+  
+  // Detectar vista inicial
+  function getDeviceType() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isPortrait = height > width;
+    
+    if (width < 380) return { type: 'phone-small', view: 'month', isPortrait };
+    if (width < 768) return { type: 'phone-large', view: isPortrait ? 'month' : 'week', isPortrait };
+    if (width < 1025) return { type: 'tablet', view: 'week', isPortrait };
+    if (width < 1921) return { type: 'desktop', view: 'week', isPortrait };
+    return { type: '4k-tv', view: 'week', isPortrait };
+  }
+  
+  const device = getDeviceType();
+  calendar.changeView(device.view);
+  viewSelect.value = device.view;
+  updateRangeLabel();
+  fetchAndDisplayEvents();
+  populateDaySelect();
+  
+  async function fetchAndDisplayEvents() {
+    if (!roomId) return;
+    const start = new Date(calendar.currentDate);
+    start.setDate(start.getDate() - 7);
+    const end = new Date(calendar.currentDate);
+    end.setDate(end.getDate() + 14);
+    
+    const startStr = start.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    
+    try {
+      const url = `${API_BASE}/reservations/range?roomId=${roomId}&start=${startStr}&end=${endStr}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const reservations = Array.isArray(data) ? data : [];
+      
+      const events = reservations.map(r => ({
+        id: r._id,
+        date: r.date,
+        hour: r.hour,
+        title: `${r.sector} - ${r.name}`,
+        motive: r.motive || '',
+        sector: r.sector,
+        name: r.name
+      }));
+      
+      calendar.setEvents(events);
+    } catch (e) {
+      console.error('Erro ao buscar eventos:', e);
+    }
+  }
+  
+  // Botões de navegação
+  btnHoje.onclick = () => { calendar.today(); updateRangeLabel(); fetchAndDisplayEvents(); populateDaySelect(); };
+  btnPrev.onclick = () => { calendar.prev(); updateRangeLabel(); fetchAndDisplayEvents(); populateDaySelect(); };
+  btnNext.onclick = () => { calendar.next(); updateRangeLabel(); fetchAndDisplayEvents(); populateDaySelect(); };
+  
+  viewSelect.onchange = () => {
+    const target = viewSelect.value;
+    calendar.changeView(target);
+    updateRangeLabel();
+    fetchAndDisplayEvents();
+    populateDaySelect();
+  };
+  
+  if (btnNovaSala) btnNovaSala.onclick = () => { criarSala(); };
+  btnCustom.onclick = () => { 
+    populateCustomDates();
+    customModal.style.display = 'flex'; 
+  };
+  
+  const btnAllDay = document.getElementById('btnAllDay');
+  if (btnAllDay) btnAllDay.onclick = () => {
+    const cur = calendar.getDate();
+    const iso = new Date(cur).toISOString().slice(0,10);
+    if (iso < todayISO) { showToast('Data no passado'); return; }
+    const dataBr = formatarIsoParaBr(iso);
+    document.getElementById('horarioSelecionado').textContent = `${dataBr} - Dia todo`;
+    modal.style.display = 'flex';
+    modal.dataset.date = iso;
+    modal.dataset.mode = 'allday';
+  };
+  
+  function populateCustomDates() {
+    const weekDays = calendar.getWeekDays ? calendar.getWeekDays() : [];
+    const dates = weekDays.map(d => d.iso);
+    customDate.innerHTML = dates.map(d => `<option value="${d}">${formatarIsoParaBr(d)}</option>`).join('');
+    customStart.innerHTML = horasEntrada().map(h => `<option value="${h}">${h}</option>`).join('');
+    customEnd.innerHTML = horasSaida().map(h => `<option value="${h}">${h}</option>`).join('');
+  }
+  
   document.getElementById('btnConfirmCustom').onclick = async () => {
     const dateStr = customDate.value;
     const startStr = customStart.value;
@@ -346,6 +578,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setor = document.getElementById('customSetor').value.trim();
     const motivo = document.getElementById('customMotivo').value.trim();
     if (!dateStr || !startStr || !endStr || !nome || !setor || !roomId) return;
+    if (dateStr < todayISO) { showToast('Data no passado'); return; }
     if (startStr >= endStr) { showToast('Entrada deve ser antes da saída'); return; }
     const hours = gerarHorasIntervalo(startStr, endStr);
     if (hours.length === 0) { showToast('Intervalo inválido'); return; }
@@ -357,15 +590,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const created = await res.json();
     const codes = created.map(r => `${r.hour}: ${r.cancelCode}`).join('\n');
-    showToast('Reserva criada');
-    alert(`Código(s) de cancelamento:\n${codes}`);
+    showToast(`Reserva criada!\nCódigos de cancelamento:\n${codes}`);
     customModal.style.display = 'none';
     document.getElementById('customNome').value = '';
     document.getElementById('customSetor').value = '';
     document.getElementById('customMotivo').value = '';
-    calendar.refetchEvents();
+    fetchAndDisplayEvents();
   };
+  
   updateRangeLabel();
+  
+  // Event listener para seletor de dia (mobile/tablet)
+  if (daySelect) {
+    daySelect.addEventListener('change', () => {
+      const selectedDate = daySelect.value;
+      if (selectedDate) {
+        calendar.changeView('week', selectedDate);
+        updateRangeLabel();
+        fetchAndDisplayEvents();
+      }
+    });
+  }
+  
+  function updateRangeLabel() {
+    const cur = calendar.getDate();
+    formatarRangeLabel(cur);
+  }
+  
+  // Fechar modais ao clicar no overlay
+  [modal, cancelarModal, customModal].forEach(m => {
+    m.addEventListener('click', (e) => {
+      if (e.target === m) {
+        const content = m.querySelector('.modal-content');
+        if (content) {
+          content.classList.add('anim-scale-out', 'anim-fade-out');
+          setTimeout(() => {
+            m.style.display = 'none';
+            content.classList.remove('anim-scale-out', 'anim-fade-out');
+          }, 200);
+        } else {
+          m.style.display = 'none';
+        }
+      }
+    });
+  });
 });
 
 function updateRangeLabel() {
@@ -373,16 +641,90 @@ function updateRangeLabel() {
   formatarRangeLabel(refDate);
 }
 
-function ajustarLarguraEixo(px) {
-  const selectors = [
-    '.fc-col-header col:first-child',
-    '.fc-scrollgrid-sync-table col:first-child',
-    '.fc-timegrid-slots col:first-child',
-    '.fc-timegrid-cols col:first-child',
-  ];
-  selectors.forEach(sel => {
-    document.querySelectorAll(sel).forEach(col => {
-      col.style.width = `${px}px`;
-    });
-  });
+document.querySelectorAll('.modal .modal-content').forEach(el => {
+  el.addEventListener('click', (e) => { e.stopPropagation(); });
+});
+
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    const c = modal.querySelector('.modal-content');
+    if (c) { c.classList.remove('anim-scale-in'); c.classList.add('anim-fade-out','anim-scale-out'); setTimeout(()=>{ modal.style.display='none'; c.classList.remove('anim-fade-out','anim-scale-out'); }, 220); }
+    document.getElementById('nome').value = '';
+    document.getElementById('setor').value = '';
+    document.getElementById('motivo').value = '';
+  }
+});
+
+cancelarModal.addEventListener('click', (e) => {
+  if (e.target === cancelarModal) {
+    const c = cancelarModal.querySelector('.modal-content');
+    if (c) { c.classList.remove('anim-scale-in'); c.classList.add('anim-fade-out','anim-scale-out'); setTimeout(()=>{ cancelarModal.style.display='none'; c.classList.remove('anim-fade-out','anim-scale-out'); }, 220); }
+    const nc = document.getElementById('nomeCancelar');
+    if (nc) nc.value = '';
+  }
+});
+
+customModal.addEventListener('click', (e) => {
+  if (e.target === customModal) {
+    customModal.style.display = 'none';
+    document.getElementById('customNome').value = '';
+    document.getElementById('customSetor').value = '';
+    document.getElementById('customMotivo').value = '';
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (modal.style.display === 'flex') {
+      modal.style.display = 'none';
+      document.getElementById('nome').value = '';
+      document.getElementById('setor').value = '';
+      document.getElementById('motivo').value = '';
+    } else if (cancelarModal.style.display === 'flex') {
+      cancelarModal.style.display = 'none';
+      if (confirmPhraseEl) confirmPhraseEl.value = '';
+      if (nomeCancelarInput) nomeCancelarInput.value = '';
+      cancelBaseName = '';
+      cancelSelectedHours = [];
+    } else if (customModal.style.display === 'flex') {
+      customModal.style.display = 'none';
+      document.getElementById('customNome').value = '';
+      document.getElementById('customSetor').value = '';
+      document.getElementById('customMotivo').value = '';
+    }
+  }
+});
+function getWeekDates(refDate) {
+  const d = new Date(refDate);
+  const day = d.getDay();
+  const mondayOffset = (day + 6) % 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - mondayOffset);
+  const list = [];
+  for (let i = 0; i < 7; i++) {
+    const x = new Date(monday);
+    x.setDate(monday.getDate() + i);
+    list.push(x);
+  }
+  return list;
+}
+
+function populateDaySelect() {
+  if (!daySelect) return;
+  const isMobileOrTablet = window.innerWidth <= 1024;
+  daySelect.style.display = isMobileOrTablet ? '' : 'none';
+  if (!isMobileOrTablet) return;
+  
+  const weekDays = calendar ? calendar.getWeekDays() : [];
+  if (weekDays.length === 0) return;
+  
+  daySelect.innerHTML = weekDays.map(day => {
+    const dateParts = day.date.split('/');
+    const label = `${day.name.slice(0, 3)} ${dateParts[0]}/${dateParts[1]}`;
+    return `<option value="${day.iso}">${label}</option>`;
+  }).join('');
+  
+  const curIso = new Date(calendar.getDate()).toISOString().slice(0,10);
+  const opt = Array.from(daySelect.options).find(o => o.value === curIso);
+  if (opt) daySelect.value = curIso;
 }

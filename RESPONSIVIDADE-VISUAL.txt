@@ -1,0 +1,322 @@
+/* REFERÊNCIA VISUAL DE BREAKPOINTS */
+
+RESOLUÇÃO POR TIPO DE DISPOSITIVO
+==================================
+
+TELEFONES (320px - 480px)
+─────────────────────────
+
+┌─────────────────┐
+│    Notch        │  iPhone 14 Pro (393x852)
+├─────────────────┤
+│ Header          │  Altura: ~50px
+├─────────────────┤
+│                 │
+│  Topbar         │  1 coluna, botões 44px
+│  (vertical)     │
+│                 │
+├─────────────────┤
+│                 │
+│  Conteúdo       │  100% width
+│  (1 coluna)     │  Sem scroll X
+│                 │
+├─────────────────┤
+│ Safe Area       │
+└─────────────────┘
+
+Características:
+• Layout 1 coluna
+• Botões 44x44px mínimo
+• Font 16px (sem zoom)
+• Calendário: MÊS
+• Modais: 90% width, fullscreen altura
+• Sem scroll horizontal
+
+
+TABLETS (768px - 1024px)
+───────────────────────
+
+┌──────────────────────────┐
+│        Header            │  Altura: ~50px
+├──────────────────────────┤
+│                          │
+│  Topbar (horizontal)     │  2 linhas se necessário
+│                          │
+├──────────────────────────┤
+│           │              │
+│ Sidebar   │  Conteúdo    │  2 colunas
+│  (flex)   │  (2 colunas) │
+│           │              │
+│           │              │
+└──────────────────────────┘
+
+Características:
+• Layout 2 colunas
+• Sidebar flexível
+• Calendário: DIA/SEMANA
+• Modals: 85% width
+• Tabelas: cards responsivos
+
+
+DESKTOPS (1280px - 1920px)
+──────────────────────────
+
+┌────────────────────────────────────────────┐
+│              Header                        │
+├────────────────────────────────────────────┤
+│  Topbar (horizontal)                       │
+├────────────────────────────────────────────┤
+│ Side │                                     │
+│ bar  │  Conteúdo (3+ colunas)             │
+│      │                                     │
+│      │  ┌────┐ ┌────┐ ┌────┐            │
+│      │  │ 1  │ │ 2  │ │ 3  │            │
+│      │  └────┘ └────┘ └────┘            │
+│      │                                     │
+└────────────────────────────────────────────┘
+
+Características:
+• Sidebar esquerda (240px)
+• Layout 3+ colunas
+• Calendário: SEMANA completa
+• Modais: 520px width (centered)
+• Tabelas: HTML tables normais
+
+
+4K/TVs (1921px+)
+────────────────
+
+┌─────────────────────────────────────────────────────────────┐
+│                          Header (ampliado)                   │
+├─────────────────────────────────────────────────────────────┤
+│  Topbar (espaçoso)                                           │
+├─────────────────────────────────────────────────────────────┤
+│ Sidebar │                                                    │
+│ (260px) │  Conteúdo (4+ colunas, muito espaçado)           │
+│         │                                                    │
+│         │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐               │
+│         │  │  1  │ │  2  │ │  3  │ │  4  │               │
+│         │  └─────┘ └─────┘ └─────┘ └─────┘               │
+│         │                                                    │
+└─────────────────────────────────────────────────────────────┘
+
+Características:
+• Elementos muito maiores
+• Font 18px base
+• Padding 4rem
+• Grid 4+ colunas
+• Calendário: SEMANA com muito espaço
+• Otimizado para visualização a distância
+
+
+TABELA DE ADAPTAÇÕES
+====================
+
+┌──────────────┬──────────┬─────────┬──────────┬────────┐
+│ Propriedade  │ Telefone │ Tablet  │ Desktop  │ 4K     │
+├──────────────┼──────────┼─────────┼──────────┼────────┤
+│ Colunas Grid │ 1        │ 2       │ 3-4      │ 4-6    │
+│ Font Base    │ 14-15px  │ 16px    │ 16-17px  │ 18px   │
+│ Padding      │ 0.5-1rem │ 1.5rem  │ 2-3rem   │ 4rem   │
+│ Gap          │ 0.5rem   │ 1rem    │ 1.2rem   │ 1.5rem │
+│ Button H     │ 44px+    │ 44px+   │ 40px+    │ 50px+  │
+│ Border Rad   │ 8px      │ 12px    │ 12-16px  │ 16px   │
+│ Modal Width  │ 90%      │ 85%     │ 520px    │ 900px  │
+│ Sidebar      │ N/A      │ Flex    │ 240px    │ 280px  │
+│ Calendar     │ Mês      │ Dia     │ Semana   │ Semana │
+│ Tabelas      │ Cards    │ Cards   │ HTML     │ HTML   │
+└──────────────┴──────────┴─────────┴──────────┴────────┘
+
+
+PONTOS DE CORTE (Breakpoints)
+=============================
+
+0px   ┌─────────────────────┐
+      │   xs (Muito Pequeno)│  320px
+      │                     │
+320px │ ─────────────────── │
+      │   sm (Pequeno)      │  380px
+      │                     │
+380px │ ─────────────────── │
+      │   md (Médio)        │  481px
+      │                     │
+480px │ ─────────────────── │  ← MUDANÇA IMPORTANTE
+      │   lg (Tablet)       │  768px
+      │                     │
+768px │ ─────────────────── │  ← MUDANÇA IMPORTANTE
+      │   xl (Desktop)      │  1025px
+      │                     │
+1024px│ ─────────────────── │  ← MUDANÇA IMPORTANTE
+      │   xxl (Big Desktop) │  1281px
+      │                     │
+1280px│ ─────────────────── │
+      │   xxxl (4K/TV)      │  1601px+
+      │                     │
+1920px└─────────────────────┘
+
+
+EXEMPLOS DE APLICAÇÃO CSS
+=========================
+
+Telefone (320px):
+  .container { padding: 0.5rem; }
+  h1 { font-size: 1.2rem; }
+  .grid { grid-template-columns: 1fr; }
+
+Tablet (768px):
+  .container { padding: 1rem; }
+  h1 { font-size: 1.4rem; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+
+Desktop (1280px):
+  .container { padding: 2rem; }
+  h1 { font-size: 1.6rem; }
+  .grid { grid-template-columns: repeat(3, 1fr); }
+
+4K (1921px+):
+  .container { padding: 4rem; }
+  h1 { font-size: 1.8rem; }
+  .grid { grid-template-columns: repeat(4, 1fr); }
+
+
+TOQUE NO TELEFONE (Touch Targets)
+=================================
+
+┌─────────────────────────────────┐
+│                                 │
+│  MÍNIMO 44x44 pixels            │
+│  ←─ Recomendado para toque ─→   │
+│  (Evita acertos errados)        │
+│                                 │
+└─────────────────────────────────┘
+
+
+ORIENTAÇÃO - PORTRAIT vs LANDSCAPE
+===================================
+
+PORTRAIT (Vertical):
+  ┌──────┐
+  │  ^   │
+  │ | |  │  Altura > Largura
+  │      │
+  │ Calendário: MÊS
+  │ Layout: 1 coluna
+  │      │
+  │ | |  │
+  │  v   │
+  └──────┘
+
+
+LANDSCAPE (Horizontal):
+  ┌────────────────┐
+  │  <─────────>   │  Largura > Altura
+  │ Calendário: SEMANA
+  │ Layout: 2+ colunas
+  │  <─────────>   │
+  └────────────────┘
+
+
+ADAPTAÇÃO AUTOMÁTICA DE CALENDÁRIO
+==================================
+
+Telefone (<768px):
+  ┌────────────────┐
+  │  Fev 2025      │
+  │ ┌──┬──┬──┬──┐  │
+  │ │ 3│ 4│ 5│ 6│  │  Vista MÊS
+  │ ├──┼──┼──┼──┤  │  (melhor para
+  │ │10│11│12│13│  │   telas pequenas)
+  │ ├──┼──┼──┼──┤  │
+  │ │17│18│19│20│  │
+  │ └──┴──┴──┴──┘  │
+  └────────────────┘
+
+Tablet (768-1024px):
+  ┌──────────────────────┐
+  │ Dom Seg Ter Qua     │
+  │  2   3   4   5      │  Vista SEMANA
+  │ 10:00                │  ou DIA
+  │ 11:00                │  (mais detalhe)
+  │ 12:00                │
+  └──────────────────────┘
+
+Desktop (1280px+):
+  ┌────────────────────────────────────┐
+  │ Seg  Ter  Qua  Qui  Sex            │
+  │ 8:00 8:00 8:00 8:00 8:00           │  Vista SEMANA
+  │ 9:00 9:00 9:00 9:00 9:00           │  (completa)
+  │ 10:00 10:00 10:00 10:00 10:00      │
+  │ 11:00 11:00 11:00 11:00 11:00      │
+  │ 12:00 12:00 12:00 12:00 12:00      │
+  └────────────────────────────────────┘
+
+
+SUPORTE A NOTCHES
+=================
+
+iPhone X/11/12/13/14/15:
+  ┌─────────────────────┐
+  │  ┌──────────────┐   │
+  │  │   Safe Area  │   │  Notch ocupado por
+  │  │     Content  │   │  barra de status
+  │  └──────────────┘   │
+  │  ┌──────────────┐   │
+  │  │   Safe Area  │   │  Home indicator
+  │  └──────────────┘   │
+  └─────────────────────┘
+
+Implementado via:
+  padding: env(safe-area-inset-top);
+  padding: env(safe-area-inset-bottom);
+  padding: env(safe-area-inset-left);
+  padding: env(safe-area-inset-right);
+
+
+CLASSES DINÂMICAS APLICADAS
+===========================
+
+Ao carregar a página, <html> recebe:
+
+size-xs              ← Tamanho detectado
+device-phone         ← Tipo de device
+portrait             ← Orientação
+os-ios               ← Sistema operacional
+
+Exemplo resultado:
+<html class="size-md device-phone portrait os-android">
+
+
+USO EM CSS
+==========
+
+html.size-md .card {
+  max-width: 300px;  /* Aplicado em tamanho md */
+}
+
+html.device-phone button {
+  min-height: 44px;  /* Botões maiores em celular */
+}
+
+html.landscape .topbar {
+  flex-direction: row;  /* Em landscape, linha */
+}
+
+
+RESUMO VISUAL
+=============
+
+     320px       480px       768px       1280px      1920px
+      ┌────────────┬────────────┬─────────┬──────────┬─────────┐
+      │ Telefone   │  Telefone  │ Tablet  │ Desktop  │ 4K/TV   │
+      │ Muito Pq.  │  Médio     │         │          │         │
+      │   xs/sm    │     md     │   lg    │  xl/xxl  │  xxxl   │
+      │ 1 coluna   │ 1-2 col    │ 2 col   │ 3 col    │ 4+ col  │
+      │ 14-15px    │   16px     │  16px   │ 17px     │ 18px    │
+      │ Modais 90% │ Modais 90% │ Mod 85% │ Mod 520  │ Mod 900 │
+      │ Mês/Dia    │  Mês/Dia   │ Dia     │ Semana   │ Semana  │
+      └────────────┴────────────┴─────────┴──────────┴─────────┘
+
+---
+
+Arquivo: RESPONSIVIDADE-VISUAL.txt
+Criado para referência visual dos breakpoints e adaptações

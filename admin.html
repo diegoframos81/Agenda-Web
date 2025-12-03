@@ -2,30 +2,159 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes, maximum-scale=5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Admin Agenda" />
+  <meta name="theme-color" content="#0b3fa8" />
+  <meta name="description" content="Painel de administração do sistema de agendamento" />
   <title>Admin - Agenda</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h1>Administração de Salas</h1>
-    <section>
-      <h2>Login</h2>
-      <input type="email" id="adminEmail" placeholder="Email" />
-      <input type="password" id="adminPassword" placeholder="Senha" />
-      <button onclick="adminLogin()">Entrar</button>
-    </section>
-    <section>
-      <h2>Criar Sala</h2>
-      <input type="text" id="roomName" placeholder="Nome da sala" />
-      <input type="number" id="roomCapacity" placeholder="Capacidade (opcional)" />
-      <button onclick="createRoom()">Criar</button>
-    </section>
-    <section>
-      <h2>Salas</h2>
-      <ul id="roomsList"></ul>
-    </section>
+  <header><a href="/">SAS-IASSEPE</a></header>
+
+  <section id="loginSection" class="login-card">
+    <h2>Login</h2>
+    <input type="email" id="adminEmail" placeholder="Email" />
+    <input type="password" id="adminPassword" placeholder="Senha" />
+    <button id="btnAdminLogin">Entrar</button>
+    <div id="loginError" class="login-error" style="display:none"></div>
+  </section>
+
+  <div class="admin-container requires-auth" style="display:none">
+    <div class="admin-layout">
+      <aside class="sidebar">
+        <div class="sidebar-title">Gestão</div>
+        <button class="sidebar-link active" data-target="overviewSection">Visão geral</button>
+        <button class="sidebar-link" data-target="roomsSection">Salas</button>
+        <button class="sidebar-link" data-target="reservationsSection">Agendamentos</button>
+        <button class="sidebar-link" data-target="reportsSection">Relatórios</button>
+        <div class="sidebar-spacer"></div>
+        <button id="btnLogout" class="btn btn-danger">Sair</button>
+      </aside>
+
+      <main class="admin-content">
+        <div class="admin-card" id="overviewSection">
+          <h2>Visão geral</h2>
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-value" id="metricsTotalRooms">0</div>
+              <div class="metric-label">Total de salas</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value" id="metricsAvailableRooms">0</div>
+              <div class="metric-label">Disponíveis</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value" id="metricsUnavailableRooms">0</div>
+              <div class="metric-label">Indisponíveis</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-card" id="createRoomCard" style="display:none">
+          <h2>Criar Sala</h2>
+          <div class="form-grid">
+            <div class="form-item">
+              <label for="roomName">Nome da sala</label>
+              <input type="text" id="roomName" placeholder="Ex.: Sala 101" />
+            </div>
+            <div class="form-item">
+              <label for="roomSector">Setor</label>
+              <input type="text" id="roomSector" placeholder="Ex.: Atendimento" />
+            </div>
+            <div class="form-item">
+              <label for="roomFloor">Andar</label>
+              <input type="text" id="roomFloor" placeholder="Ex.: 1º andar" />
+            </div>
+            <div class="form-item">
+              <label for="roomCreator">Quem está criando</label>
+              <input type="text" id="roomCreator" placeholder="Seu nome" />
+            </div>
+            <div class="form-item">
+              <label for="roomCapacity">Capacidade (opcional)</label>
+              <input type="number" id="roomCapacity" placeholder="Ex.: 10" min="0" />
+            </div>
+            <label class="checkbox"><input type="checkbox" id="roomAvailable" checked /> Sala está disponível</label>
+          </div>
+          <p class="hint">Nome é obrigatório. Os demais campos ajudam na identificação.</p>
+          <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+            <button id="btnCreateRoom" class="btn btn-primary">Criar sala</button>
+            <button id="btnNewRoomCard" class="btn btn-secondary">Fechar</button>
+          </div>
+        </div>
+
+        <section class="admin-card" id="roomsSection">
+          <div class="section-header">
+            <h2>Salas</h2>
+            <div class="section-tools">
+              <input type="text" id="roomFilter" placeholder="Filtrar por nome ou setor" />
+              <button id="btnRefreshRooms" class="btn btn-secondary">Atualizar</button>
+              <button id="btnOpenCreateRoom" class="btn btn-primary">Nova sala</button>
+            </div>
+          </div>
+          <div id="roomsList" class="rooms-admin-list"></div>
+        </section>
+
+        <section class="admin-card" id="reservationsSection" style="display:none">
+          <div class="section-header">
+            <h2>Agendamentos da sala</h2>
+          </div>
+          <div class="form-grid">
+            <input type="text" id="resRoomId" placeholder="ID da sala" />
+            <input type="date" id="resStart" />
+            <input type="date" id="resEnd" />
+            <button id="btnLoadRes" class="btn btn-primary">Carregar</button>
+            <button id="btnExportXlsx" class="btn btn-secondary">Exportar XLSX</button>
+          </div>
+          <div id="resList" class="rooms-admin-list"></div>
+        </section>
+
+        <section class="admin-card" id="reportsSection" style="display:none">
+          <h2>Relatórios</h2>
+          <p>Em breve: relatórios consolidados de uso e disponibilidade.</p>
+        </section>
+      </main>
+    </div>
   </div>
-  <script src="admin.js"></script>
-  </body>
-  </html>
+
+  <div class="modal" id="editRoomModal" style="display:none">
+    <div class="modal-content">
+      <h3>Editar sala</h3>
+      <div class="form-grid">
+        <div class="form-item">
+          <label for="editRoomName">Nome da sala</label>
+          <input type="text" id="editRoomName" placeholder="Ex.: Sala 101" />
+        </div>
+        <div class="form-item">
+          <label for="editRoomSector">Setor</label>
+          <input type="text" id="editRoomSector" placeholder="Ex.: Atendimento" />
+        </div>
+        <div class="form-item">
+          <label for="editRoomFloor">Andar</label>
+          <input type="text" id="editRoomFloor" placeholder="Ex.: 1º andar" />
+        </div>
+        <div class="form-item">
+          <label for="editRoomCreator">Criado por</label>
+          <input type="text" id="editRoomCreator" placeholder="Responsável" />
+        </div>
+        <div class="form-item">
+          <label for="editRoomCapacity">Capacidade (opcional)</label>
+          <input type="number" id="editRoomCapacity" placeholder="Ex.: 10" min="0" />
+        </div>
+        <label class="checkbox"><input type="checkbox" id="editRoomAvailable" /> Sala disponível</label>
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+        <button id="btnSaveEditRoom" class="btn btn-primary">Salvar</button>
+        <button id="btnCancelEditRoom" class="btn btn-secondary">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/responsive.js"></script>
+  <script src="/responsive-test.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>

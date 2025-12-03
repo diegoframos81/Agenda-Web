@@ -6,21 +6,46 @@ import { router as roomsRouter } from './routes/rooms.js'
 import { router as reservationsRouter } from './routes/reservations.js'
 import { router as adminRouter } from './routes/admin.js'
 import { ensureDefaultAdmin } from './models/Admin.js'
+import { Room } from './models/Room.js'
+import { Reservation } from './models/Reservation.js'
+import { Admin } from './models/Admin.js'
 
 async function connectMongo() {
-  if (config.mongoUri) {
-    await mongoose.connect(config.mongoUri)
-    return
+  const tryConnect = async (uri, label) => {
+    try {
+      await mongoose.connect(uri)
+      console.log(`[MongoDB] Conectado (${label}) ${uri}`)
+      return true
+    } catch (e) {
+      console.warn(`[MongoDB] Falha ao conectar (${label}):`, e.message)
+      return false
+    }
   }
-  const { MongoMemoryServer } = await import('mongodb-memory-server')
-  const mongod = await MongoMemoryServer.create()
-  const uri = mongod.getUri()
-  await mongoose.connect(uri)
-  console.log('[MongoDB] Usando banco em memória para desenvolvimento')
+
+  if (config.mongoUri && (await tryConnect(config.mongoUri, 'ENV/LOCAL'))) return
+
+  try {
+    const { MongoMemoryServer } = await import('mongodb-memory-server')
+    const mongod = await MongoMemoryServer.create()
+    const uri = mongod.getUri()
+    await mongoose.connect(uri)
+    console.log('[MongoDB] Usando banco em memória para desenvolvimento')
+  } catch (e) {
+    console.error('Falha ao iniciar Mongo em memória', e)
+    throw e
+  }
 }
 
 async function bootstrap() {
   await connectMongo()
+  await Promise.all([
+    Room.syncIndexes(),
+    Reservation.syncIndexes(),
+    Admin.syncIndexes(),
+  ])
+  if (process.env.PURGE_RESERVATIONS === '1') {
+    await Reservation.deleteMany({})
+  }
   await ensureDefaultAdmin(config.adminEmail, config.adminPassword)
 
   const app = express()

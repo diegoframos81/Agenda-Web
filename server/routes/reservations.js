@@ -1,6 +1,8 @@
 import express from 'express'
 import { Reservation } from '../models/Reservation.js'
 import { Room } from '../models/Room.js'
+import { requireAuth } from '../middleware/auth.js'
+import XLSX from 'xlsx'
 
 export const router = express.Router()
 
@@ -54,16 +56,49 @@ router.post('/', async (req, res) => {
 })
 
 router.post('/cancel', async (req, res) => {
-  const { roomId, date, hour, cancelCode } = req.body
-  if (!roomId || !date || !hour || !cancelCode) {
+  const { roomId, date, hour, cancelCode, name } = req.body
+  if (!roomId || !date || !hour || (!cancelCode && !name)) {
     return res.status(400).json({ error: 'Payload inválido' })
   }
-  const r = await Reservation.findOne({ roomId, date, hour })
+  const r = await Reservation.findOne({ roomId, date, hour, status: 'active' })
   if (!r) return res.status(404).json({ error: 'Reserva não encontrada' })
-  if (r.cancelCode !== cancelCode) {
-    return res.status(403).json({ error: 'Código de cancelamento inválido' })
+  if (cancelCode) {
+    if (r.cancelCode !== cancelCode) return res.status(403).json({ error: 'Código de cancelamento inválido' })
+  } else {
+    const a = (name || '').trim().toLowerCase()
+    const b = (r.name || '').trim().toLowerCase()
+    if (a !== b) return res.status(403).json({ error: 'Nome não confere com a reserva' })
   }
-  r.status = 'cancelled'
-  await r.save()
+  await Reservation.findByIdAndDelete(r._id)
   res.json({ ok: true })
+})
+
+router.delete('/:id', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const r = await Reservation.findById(id)
+  if (!r) return res.status(404).json({ error: 'Reserva não encontrada' })
+  await Reservation.findByIdAndDelete(id)
+  res.json({ ok: true })
+})
+
+router.get('/export', requireAuth, async (req, res) => {
+  const { roomId, start, end } = req.query
+  if (!roomId || !start || !end) return res.status(400).json({ error: 'roomId, start e end são obrigatórios' })
+  const reservations = await Reservation.find({ roomId, date: { $gte: start, $lte: end } }).sort({ date: 1, hour: 1 })
+  const rows = reservations.map(r => ({
+    Sala: r.roomId.toString(),
+    Data: r.date,
+    Hora: r.hour,
+    Nome: r.name,
+    Setor: r.sector,
+    Motivo: r.motive || '',
+    Status: r.status,
+  }))
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Agendamentos')
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.setHeader('Content-Disposition', `attachment; filename="agendamentos-${start}_a_${end}.xlsx"`)
+  res.send(buf)
 })
