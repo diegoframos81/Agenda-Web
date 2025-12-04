@@ -7,5 +7,5 @@ export const config = {
   mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/agendaweb',
   jwtSecret: process.env.JWT_SECRET || 'change-me',
   adminEmail: process.env.ADMIN_EMAIL || 'admin@example.com',
-  adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
+  adminPassword: process.env.ADMIN_PASSWORD || 'superadmin123',
 }

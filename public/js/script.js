@@ -122,16 +122,15 @@ function gerarHorasIntervalo(startStr, endStr) {
 
 async function getRooms() {
   try {
-    const health = await fetch(`${API_BASE}/health`).then(r => r.ok);
-    if (!health) throw new Error('API fora do ar');
     const res = await fetch(`${API_BASE}/rooms`);
     if (!res.ok) throw new Error(`Falha ao carregar salas (${res.status})`);
     const rooms = await res.json();
     roomsCache = rooms;
+    console.log('Salas carregadas:', rooms);
     return rooms;
   } catch (e) {
     showToast('Não foi possível carregar as salas. Verifique a API.');
-    console.error(e);
+    console.error('Erro ao carregar salas:', e);
     roomsCache = [];
     return [];
   }

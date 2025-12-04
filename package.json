@@ -3,7 +3,10 @@
     "serve": "^14.2.5"
   },
   "scripts": {
-    "web:dev": "serve -l 5500 .",
-    "api:dev": "npm --prefix server run dev"
+    "start": "node server-frontend.js",
+    "dev": "concurrently \"npm run start\" \"npm run api:dev\"",
+    "api:dev": "npm --prefix server run dev",
+    "api:start": "npm --prefix server start",
+    "test": "npm --prefix server test"
   }
 }
