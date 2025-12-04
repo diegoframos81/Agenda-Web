@@ -7,7 +7,10 @@
     "start": "node index.js",
     "dev": "node index.js",
     "migrate": "node scripts/migrate.js",
-    "test": "jest"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:verbose": "node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
