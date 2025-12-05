@@ -1,0 +1,12 @@
+# Dependencies
+node_modules
+npm-debug.log*
+package-lock.json
+
+# Testing
+coverage
+*.log
+
+# Build
+dist
+build

@@ -1,0 +1,77 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: agenda-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: agendaweb
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - agenda-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Backend API
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: agenda-backend
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGODB_URI: mongodb://mongodb:27017/agendaweb
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-superadmin123}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - agenda-network
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    command: node index.js
+
+  # Frontend Server
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agenda-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      API_URL: http://backend:4000
+    depends_on:
+      - backend
+    networks:
+      - agenda-network
+    volumes:
+      - ./public:/app/public:ro
+      - ./server-frontend.js:/app/server-frontend.js:ro
+
+networks:
+  agenda-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local

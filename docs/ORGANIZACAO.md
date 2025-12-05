@@ -111,9 +111,9 @@ node server-frontend.js
 
 ## 📝 Próximos Passos Sugeridos
 
-- [ ] Configurar variáveis de ambiente (.env)
+- [x] Configurar variáveis de ambiente (.env)
 - [ ] Adicionar CI/CD pipeline
-- [ ] Implementar Docker/Docker Compose
+- [x] Implementar Docker/Docker Compose ✅
 - [ ] Adicionar mais testes
 - [ ] Configurar ESLint/Prettier
 - [ ] Adicionar logging estruturado

@@ -23,11 +23,39 @@ Agenda-Web/
 
 ## 🚀 Quick Start
 
-### Pré-requisitos
+### Opção 1: Com Docker (Recomendado) 🐳
+
+**Pré-requisitos:**
+- Docker 20.10+
+- Docker Compose 2.0+
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/diegoframos81/Agenda-Web.git
+cd Agenda-Web
+
+# 2. Configure as variáveis de ambiente
+cp .env.example .env
+
+# 3. Inicie todos os serviços
+docker-compose up -d
+
+# 4. Acesse a aplicação
+# Frontend: http://localhost:3000
+# Admin: http://localhost:3000/admin/login
+```
+
+✨ **Pronto!** O Docker configurará automaticamente MongoDB, Backend e Frontend.
+
+📖 **Documentação completa:** Veja [docs/DOCKER.md](docs/DOCKER.md)
+
+---
+
+### Opção 2: Instalação Manual
+
+**Pré-requisitos:**
 - Node.js 16+
 - MongoDB 5+
-
-### Instalação
 
 1. **Clone o repositório**
 ```bash
@@ -48,8 +76,8 @@ cd ..
 
 3. **Configure as variáveis de ambiente**
 ```bash
-# Copie o arquivo .env.example para .env no diretório server/
-cp server/.env.example server/.env
+# Copie o arquivo .env.example para .env
+cp .env.example .env
 ```
 
 4. **Inicie o MongoDB**
@@ -142,9 +170,11 @@ O sistema é totalmente responsivo e otimizado para:
 ## 📚 Documentação
 
 Consulte a pasta `docs/` para documentação detalhada:
-- `GUIA-TESTES.md` - Guia completo de testes
-- `RESPONSIVIDADE.md` - Documentação de responsividade
-- `QUICK-START.md` - Guia de início rápido
+- **[DOCKER.md](docs/DOCKER.md)** - Guia completo de Docker e Docker Compose
+- **[GUIA-TESTES.md](docs/GUIA-TESTES.md)** - Guia completo de testes
+- **[RESPONSIVIDADE.md](docs/RESPONSIVIDADE.md)** - Documentação de responsividade
+- **[QUICK-START.md](docs/QUICK-START.md)** - Guia de início rápido
+- **[ORGANIZACAO.md](docs/ORGANIZACAO.md)** - Estrutura e organização do projeto
 
 ## 🤝 Contribuindo
 
