@@ -47,6 +47,10 @@
   justify-content: center;
   font-weight: 600;
   letter-spacing: 0.2px;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.08);
 }
 
 .week-view .calendar-header .day-column {
@@ -94,6 +98,10 @@
   border-right: 1px solid #e5e8ed;
   background: #f7f8fa;
   font-size: clamp(0.9rem, 1.5vw, 1.02rem);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.06);
 }
 
 .week-view .day-cell {
