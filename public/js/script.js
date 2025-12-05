@@ -150,17 +150,51 @@ function findRoomIdBySlug(slug) {
   return r?._id || null;
 }
 
-function renderRooms(rooms) {
+async function getAvailableHoursToday(roomId) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const res = await fetch(`${API_BASE}/reservations?roomId=${roomId}&date=${today}`);
+    if (!res.ok) return [];
+    const reservations = await res.json();
+    
+    // Horários de trabalho: 8h às 17h
+    const allHours = [];
+    for (let h = 8; h < 17; h++) {
+      allHours.push(`${String(h).padStart(2, '0')}:00`);
+    }
+    
+    // Remover horários já reservados
+    const reservedHours = reservations.map(r => r.hour);
+    const available = allHours.filter(h => !reservedHours.includes(h));
+    
+    return available;
+  } catch (e) {
+    console.error('Erro ao buscar horários disponíveis:', e);
+    return [];
+  }
+}
+
+async function renderRooms(rooms) {
   const grid = document.getElementById('roomsGrid');
   grid.style.display = '';
+  
+  // Renderizar cards inicialmente sem horários
   const html = rooms.map(r => {
     const cap = r.capacity ? `Capacidade: ${r.capacity}` : '';
     const cls = r.available ? 'room-card' : 'room-card disabled';
     const sector = r.sector ? `Setor: ${r.sector}` : '';
     const floor = r.floor ? `Andar: ${r.floor}` : '';
-    return `<div class="${cls}" data-id="${r._id}"><h3>${r.name}</h3><div class="room-meta">${[sector, floor, cap].filter(Boolean).map(t=>`<span>${t}</span>`).join('')}</div></div>`;
+    return `<div class="${cls}" data-id="${r._id}">
+      <h3>${r.name}</h3>
+      <div class="room-meta">${[sector, floor, cap].filter(Boolean).map(t=>`<span>${t}</span>`).join('')}</div>
+      <div class="room-availability" data-room-id="${r._id}">
+        <div class="availability-loading">Carregando horários...</div>
+      </div>
+    </div>`;
   }).join('');
   grid.innerHTML = html;
+  
+  // Adicionar eventos de click
   document.querySelectorAll('.room-card').forEach(el => {
     el.onclick = () => {
       if (el.classList.contains('disabled')) return;
@@ -169,6 +203,25 @@ function renderRooms(rooms) {
       location.assign(`/${slug}/agendamento`);
     };
   });
+  
+  // Buscar horários disponíveis para cada sala
+  for (const room of rooms) {
+    if (room.available) {
+      const availableHours = await getAvailableHoursToday(room._id);
+      const availabilityDiv = document.querySelector(`.room-availability[data-room-id="${room._id}"]`);
+      
+      if (availabilityDiv) {
+        if (availableHours.length === 0) {
+          availabilityDiv.innerHTML = '<div class="availability-none">Sem horários disponíveis hoje</div>';
+        } else {
+          const hoursText = availableHours.length === 9 ? 'Todos os horários disponíveis' : 
+            availableHours.length > 5 ? `${availableHours.length} horários disponíveis` :
+            availableHours.join(', ');
+          availabilityDiv.innerHTML = `<div class="availability-hours"><strong>Hoje:</strong> ${hoursText}</div>`;
+        }
+      }
+    }
+  }
 }
 
 function atualizarUIAdmin() {

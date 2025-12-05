@@ -478,6 +478,36 @@ h1 {
 .room-card .room-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; }
 .room-card .room-meta span { font-size: 0.95rem; color: var(--text); background: #f3f6ff; padding: 4px 10px; border-radius: 999px; }
 
+/* Disponibilidade de horários */
+.room-availability {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #e8ecf7;
+}
+
+.availability-loading {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.availability-hours {
+  font-size: 0.9rem;
+  color: #2e7d32;
+  line-height: 1.4;
+}
+
+.availability-hours strong {
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.availability-none {
+  font-size: 0.9rem;
+  color: #d32f2f;
+  font-weight: 500;
+}
+
 /* Aumenta a área "Dia todo" na timeGrid */
 .fc-timegrid-axis-cushion {
   padding: 10px 0;
