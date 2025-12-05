@@ -217,7 +217,8 @@ async function renderRooms(rooms) {
           const hoursText = availableHours.length === 9 ? 'Todos os horários disponíveis' : 
             availableHours.length > 5 ? `${availableHours.length} horários disponíveis` :
             availableHours.join(', ');
-          availabilityDiv.innerHTML = `<div class="availability-hours"><strong>Hoje:</strong> ${hoursText}</div>`;
+          availabilityDiv.innerHTML = `<div class="availability-hours"><strong>Horários disponíveis hoje:</strong> <br> <br/> ${hoursText}</div>`;
+
         }
       }
     }

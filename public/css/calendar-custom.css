@@ -3,9 +3,11 @@
   background: var(--card-bg);
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
   max-width: 1600px;
   margin: 0 auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Vista semanal */
@@ -241,24 +243,36 @@
 
 /* Responsividade */
 @media (max-width: 768px) {
+  .custom-calendar {
+    border-radius: 8px;
+    margin: 0;
+  }
+  
+  .week-view .calendar-header,
+  .week-view .time-row {
+    min-width: 600px;
+  }
+  
   .week-view .calendar-header {
-    grid-template-columns: 80px repeat(5, 1fr);
+    grid-template-columns: 70px repeat(5, minmax(100px, 1fr));
   }
   
   .week-view .time-row {
-    grid-template-columns: 80px repeat(5, 1fr);
+    grid-template-columns: 70px repeat(5, minmax(100px, 1fr));
+    min-height: 54px;
   }
   
   .week-view .hour-column {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+    padding: 4px;
   }
   
   .week-view .calendar-header .day-name {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
   }
   
   .week-view .calendar-header .day-date {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
   
   .calendar-event .event-title {
@@ -285,13 +299,43 @@
 }
 
 @media (max-width: 480px) {
+  .week-view .calendar-header,
+  .week-view .time-row {
+    min-width: 550px;
+  }
+  
   .week-view .calendar-header {
-    grid-template-columns: 60px repeat(5, 1fr);
+    grid-template-columns: 55px repeat(5, minmax(90px, 1fr));
   }
   
   .week-view .time-row {
-    grid-template-columns: 60px repeat(5, 1fr);
-    min-height: 50px;
+    grid-template-columns: 55px repeat(5, minmax(90px, 1fr));
+    min-height: 48px;
+  }
+  
+  .week-view .hour-column {
+    font-size: 0.75rem;
+    padding: 2px;
+  }
+  
+  .week-view .calendar-header .day-name {
+    font-size: 0.75rem;
+  }
+  
+  .week-view .calendar-header .day-date {
+    font-size: 0.7rem;
+  }
+  
+  .week-view .day-cell {
+    padding: 4px;
+  }
+  
+  .calendar-event .event-title {
+    font-size: 0.7rem;
+  }
+  
+  .calendar-event .event-motive {
+    font-size: 0.65rem;
   }
   
   .month-view .month-cell {

@@ -802,7 +802,9 @@ h1 {
 
 /* Dispositivos muito pequenos: até 320px (telefones antigos, alguns wearables) */
 @media (max-width: 320px) {
-  .container { padding: 0.5rem; }
+  body { overflow-x: hidden; }
+  .container { padding: 0.5rem; overflow-x: hidden; }
+  #calendar { padding: 0.25rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   header { padding: 0.75rem 0.5rem; font-size: 1.2rem; }
   .topbar { padding: 0 0.25rem; grid-template-columns: 1fr; }
   .topbar .left, .topbar .right, .topbar .center { width: 100%; margin-bottom: 0.25rem; }
@@ -819,7 +821,9 @@ h1 {
 
 /* Telefones pequenos: 321px - 380px */
 @media (min-width: 321px) and (max-width: 380px) {
-  .container { padding: 0.75rem; }
+  body { overflow-x: hidden; }
+  .container { padding: 0.75rem; overflow-x: hidden; }
+  #calendar { padding: 0.3rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   header { padding: 0.75rem; font-size: 1.3rem; }
   .topbar { grid-template-columns: 1fr; grid-template-areas: 'left' 'center' 'right'; }
   .topbar .left, .topbar .right { width: 100%; margin-bottom: 0.5rem; }
@@ -834,7 +838,9 @@ h1 {
 
 /* Telefones médios: 381px - 480px */
 @media (min-width: 381px) and (max-width: 480px) {
-  .container { padding: 1rem; }
+  body { overflow-x: hidden; }
+  .container { padding: 1rem; overflow-x: hidden; }
+  #calendar { padding: 0.4rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   header { padding: 0.85rem; font-size: 1.4rem; }
   .topbar { grid-template-columns: 1fr; grid-template-areas: 'left' 'center' 'right'; }
   .topbar .left, .topbar .right { width: 100%; margin-bottom: 0.5rem; justify-content: space-between; }
@@ -851,7 +857,9 @@ h1 {
 
 /* Telefones grandes & Tablets pequenos: 481px - 768px */
 @media (min-width: 481px) and (max-width: 768px) {
-  .container { padding: 1rem; }
+  body { overflow-x: hidden; }
+  .container { padding: 1rem; overflow-x: hidden; }
+  #calendar { padding: 0.5rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   header { padding: 1rem; font-size: 1.5rem; }
   .topbar { padding: 0 0.5rem; grid-template-columns: repeat(2, 1fr); grid-template-areas: 'left right' 'center center'; gap: 0.75rem; }
   .topbar .left button, .topbar .right button, .topbar .right select { flex: 0 1 48%; padding: 0.5rem; font-size: 0.95rem; }
