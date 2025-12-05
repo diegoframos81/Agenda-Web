@@ -41,7 +41,7 @@
 .week-view .calendar-header .hour-column {
   background: var(--primary);
   color: #ffffff;
-  font-size: 1rem;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,6 +270,11 @@
 
 /* Responsividade */
 @media (max-width: 768px) {
+  .week-view .calendar-header .hour-column {
+    font-size: 0.7rem;
+    padding: 4px;
+  }
+  
   .week-view .calendar-header {
     grid-template-columns: 65px repeat(5, minmax(95px, 1fr));
     min-width: 540px;
@@ -322,6 +327,11 @@
 }
 
 @media (max-width: 480px) {
+  .week-view .calendar-header .hour-column {
+    font-size: 0.65rem;
+    padding: 2px;
+  }
+  
   .week-view .calendar-header {
     grid-template-columns: 50px repeat(5, minmax(85px, 1fr));
     min-width: 475px;
