@@ -1,6 +1,6 @@
-# Agenda-Web - Sistema de Agendamento IASSEPE
+# Sistema de Agendamento de Salas - WEB ( SAS-Web )
 
-Sistema de agendamento de salas corporativo com interface moderna e responsiva.
+Sistema de agendamento de salas de reuniões corporativas com interface moderna e responsiva.
 
 ## 📁 Estrutura do Projeto
 
