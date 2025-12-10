@@ -186,7 +186,7 @@ Consulte a pasta `docs/` para documentação detalhada:
 
 ## 📝 Licença
 
-Este projeto é propriedade do SAS-IASSEPE.
+Este projeto é propriedade de Diego Ramos.
 
 ## 👥 Autores
 
@@ -194,4 +194,4 @@ Este projeto é propriedade do SAS-IASSEPE.
 
 ## 📞 Suporte
 
-Para suporte, abra uma issue no repositório ou entre em contato com a equipe de TI.
+Para suporte, abra uma issue no repositório.
